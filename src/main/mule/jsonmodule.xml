@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:xml-module="http://www.mulesoft.org/schema/mule/xml-module"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/xml-module http://www.mulesoft.org/schema/mule/xml-module/current/mule-xml-module.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d5bc5818-fd7d-4dc7-9677-8079a04c88bf" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<xml-module:config name="XML_Config" doc:name="XML Config" doc:id="cee76d7c-2662-4a02-b282-3f9c4f195d5b" />
+	<flow name="jsonmoduleFlow" doc:id="e2818254-07cd-4485-9543-a64cffef1f84" >
+		<http:listener doc:name="Listener" doc:id="4d45a78e-96d5-4198-948f-d9eb22ca8343" path="jsonmodule" config-ref="HTTP_Listener_config"/>
+		<xml-module:validate-schema doc:name="Validate schema" doc:id="da643e70-d111-465b-9478-e2a803556b26" schemas="json-schema.json" config-ref="XML_Config">
+			<xml-module:schema-contents />
+		</xml-module:validate-schema>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1fea42db-a931-4fcf-b8a7-7e97097a62b2" >
+				<ee:transform doc:name="Transform Message" doc:id="bdd21c5d-1df1-4d3a-a560-fde9354b8ea1" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+error.muleMessage.payload filter($.level == "error") map {
+    "Error $$": {
+        element: $.instance.pointer,
+        message: $.message
+    }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
